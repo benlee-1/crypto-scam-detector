@@ -1,0 +1,80 @@
+# Crypto Scam Tweet Detector
+
+A weak supervision pipeline for detecting crypto scam tweets — built to demonstrate
+the core methodology behind programmatic data labeling at scale.
+
+## What is Weak Supervision?
+
+The bottleneck in most ML projects isn't the model — it's the data. Hand-labeling
+thousands of examples is slow, expensive, and doesn't scale. Weak supervision flips
+the approach: instead of labeling data points one by one, you encode domain knowledge
+as programmatic **labeling functions (LFs)** and let a **label model** aggregate their
+noisy outputs into probabilistic training labels.
+
+This project applies that paradigm to a real-world problem: identifying crypto scam
+tweets from account metadata and tweet content alone — without a single manually
+labeled training example.
+
+## Pipeline
+```
+Synthetic Data (Twitter API v2 schema)
+      ↓
+Labeling Functions → Label Matrix
+      ↓
+Label Model (Snorkel) → Soft Labels + LF Analytics
+      ↓
+Feature Extraction (sentence-transformers: all-MiniLM-L6-v2)
+      ↓
+Classifier (logistic regression trained on soft labels)
+      ↓
+Evaluation on gold set → precision, recall, F1, ROC-AUC
+      ↓
+FastAPI endpoint → deployed on Linode
+```
+
+## Labeling Functions
+
+LFs operate on raw tweet fields — no embeddings, just logic:
+
+- Keyword matching (giveaway language, urgency phrases)
+- Regex patterns (crypto token mentions, suspicious URLs)
+- Metadata signals (follower/following ratio, account age)
+- Engagement anomalies (inflated likes, near-zero replies)
+- Impersonation patterns (username heuristics)
+- LLM-as-LF (Claude used as a labeling signal for ambiguous cases)
+
+## Stack
+
+- **Snorkel** — label model and LF framework
+- **sentence-transformers** — pretrained BERT embeddings (all-MiniLM-L6-v2)
+- **scikit-learn** — downstream classifier
+- **FastAPI** — serving layer
+- **Anthropic API** — synthetic data generation + LLM-as-LF
+
+## Setup
+```bash
+git clone https://github.com/benlee-1/crypto-scam-detector.git
+cd crypto-scam-detector
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Add a `.env` file with your Anthropic API key:
+```
+ANTHROPIC_API_KEY=your-key-here
+```
+
+Then open the notebook:
+```bash
+jupyter notebook crypto_scam_detector.ipynb
+```
+
+## Why This Project?
+
+This was built as a hands-on implementation of the Snorkel weak supervision
+methodology — the same approach used in production data pipelines for LLM fine-tuning,
+RLHF dataset construction, and enterprise ML labeling workflows.
+
+The data schema mirrors the Twitter API v2 format, meaning the pipeline could be
+pointed at real tweet data with minimal modification.
